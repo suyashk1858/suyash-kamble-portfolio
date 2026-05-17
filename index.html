@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suyash Kamble — Video Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #080808;
+    --white: #f0ece3;
+    --cream: #e8e0ce;
+    --gold: #c9a84c;
+    --gold-dim: #7a5f28;
+    --red: #d93f2e;
+    --gray: #1a1a1a;
+    --mid: #3a3a3a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(201,168,76,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, width 0.2s, height 0.2s, border-color 0.2s;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 9997;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.4rem 3rem;
+    background: linear-gradient(to bottom, rgba(8,8,8,0.95), transparent);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+  .nav-links { display: flex; gap: 2.5rem; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cream);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #080808 0%, #111 100%);
+  }
+
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8rem 5rem 6rem;
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+  }
+
+  .hero-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.3s forwards;
+  }
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 30px; height: 1px;
+    background: var(--gold);
+  }
+
+  .hero-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 10vw, 9rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--white);
+    opacity: 0;
+    animation: fadeUp 0.9s 0.5s forwards;
+  }
+  .hero-name span { color: var(--gold); }
+
+  .hero-role {
+    font-size: 1rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    color: var(--cream);
+    opacity: 0;
+    animation: fadeUp 0.9s 0.7s forwards;
+    margin-top: 1.2rem;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 3rem;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.9s forwards;
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cream);
+    opacity: 0.6;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.9s 1.1s forwards;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--black);
+    padding: 0.85rem 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover { background: var(--cream); transform: translateY(-2px); }
+  .btn-outline {
+    border: 1px solid rgba(201,168,76,0.4);
+    color: var(--cream);
+    padding: 0.85rem 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+
+  /* HERO RIGHT — Photo */
+  .hero-right {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-photo-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .hero-photo-wrap img {
+    height: 90%;
+    width: 100%;
+    object-fit: cover;
+    object-position: top center;
+    filter: grayscale(15%) contrast(1.05);
+    opacity: 0;
+    animation: fadeIn 1.2s 0.4s forwards;
+  }
+  .hero-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, var(--black) 0%, transparent 30%, transparent 70%, var(--black) 100%),
+                linear-gradient(to top, var(--black) 0%, transparent 30%);
+  }
+
+  /* Diagonal accent */
+  .hero-diagonal {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 80px;
+    background: linear-gradient(to bottom, transparent, var(--gold));
+    opacity: 0;
+    animation: fadeIn 1s 1.5s forwards;
+  }
+
+  /* SCROLLING TICKER */
+  .ticker-wrap {
+    background: var(--gold);
+    overflow: hidden;
+    padding: 0.6rem 0;
+  }
+  .ticker {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker 18s linear infinite;
+    gap: 0;
+  }
+  .ticker-item {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    color: var(--black);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .ticker-item::after {
+    content: '◆';
+    font-size: 0.5rem;
+  }
+
+  /* SECTION BASE */
+  section { padding: 7rem 5rem; }
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .section-label::before { content: ''; display: block; width: 24px; height: 1px; background: var(--gold); }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--white);
+  }
+
+  /* ABOUT */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    margin-top: 4rem;
+    align-items: start;
+  }
+  .about-text {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: rgba(240,236,227,0.75);
+    font-weight: 300;
+  }
+  .about-text p + p { margin-top: 1.2rem; }
+  .about-text strong { color: var(--gold); font-weight: 500; }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .skill-pill {
+    border: 1px solid rgba(201,168,76,0.2);
+    padding: 0.7rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream);
+    opacity: 0.7;
+    transition: border-color 0.2s, opacity 0.2s, background 0.2s;
+    cursor: default;
+  }
+  .skill-pill:hover {
+    border-color: var(--gold);
+    opacity: 1;
+    background: rgba(201,168,76,0.06);
+  }
+
+  /* WORK / VIDEO GRID */
+  .work-section { background: var(--gray); }
+  .video-tabs {
+    display: flex;
+    gap: 0;
+    margin: 3rem 0 2.5rem;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+  .tab-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(240,236,227,0.4);
+    background: none;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab-btn:hover { color: var(--cream); }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .video-grid.shorts-grid { grid-template-columns: repeat(4, 1fr); }
+
+  .video-card {
+    position: relative;
+    background: var(--mid);
+    overflow: hidden;
+    cursor: pointer;
+    display: block;
+    text-decoration: none;
+    transition: transform 0.3s;
+  }
+  .video-card:hover { transform: translateY(-4px); }
+  .video-card:hover .video-overlay { opacity: 1; }
+  .video-card:hover .play-btn { transform: translate(-50%, -50%) scale(1.1); }
+
+  .video-thumb {
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+    position: relative;
+    overflow: hidden;
+  }
+  .video-grid.shorts-grid .video-thumb { aspect-ratio: 9/16; }
+
+  .yt-embed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .video-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(8,8,8,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .play-btn {
+    width: 50px; height: 50px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.2s;
+  }
+  .play-btn svg { fill: var(--gold); margin-left: 3px; }
+
+  .video-info {
+    padding: 0.8rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .video-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    opacity: 0.5;
+  }
+  .video-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: rgba(240,236,227,0.5);
+    text-transform: uppercase;
+  }
+  .ext-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--gold);
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: opacity 0.2s;
+  }
+  .video-card:hover .ext-link { opacity: 1; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* EXPERIENCE TIMELINE */
+  .exp-line {
+    position: relative;
+    margin-top: 4rem;
+    padding-left: 2.5rem;
+  }
+  .exp-line::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+  }
+  .exp-item {
+    position: relative;
+    padding-bottom: 3rem;
+  }
+  .exp-item::before {
+    content: '';
+    position: absolute;
+    left: -2.5rem;
+    top: 0.4rem;
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translateX(-3.5px);
+  }
+  .exp-company {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.05em;
+    color: var(--white);
+  }
+  .exp-role {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin: 0.3rem 0 0.8rem;
+  }
+  .exp-desc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: rgba(240,236,227,0.6);
+    max-width: 600px;
+  }
+  .exp-period {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: rgba(240,236,227,0.3);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* CONTACT */
+  .contact-section {
+    background: var(--black);
+    padding: 7rem 5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .contact-left .section-title { font-size: clamp(3rem, 5vw, 4.5rem); }
+  .contact-right { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1.2rem 1.5rem;
+    border: 1px solid rgba(201,168,76,0.12);
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+  .contact-item:hover {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.04);
+    transform: translateX(6px);
+  }
+  .contact-icon {
+    width: 36px; height: 36px;
+    background: rgba(201,168,76,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .contact-icon svg { fill: var(--gold); }
+  .contact-details {}
+  .contact-type {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+  }
+  .contact-value {
+    font-size: 0.85rem;
+    color: var(--cream);
+    margin-top: 0.2rem;
+  }
+
+  /* FOOTER */
+  footer {
+    background: #040404;
+    border-top: 1px solid rgba(201,168,76,0.1);
+    padding: 1.8rem 5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+  .footer-copy {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: rgba(240,236,227,0.3);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @keyframes titlePulse {
+    from { opacity: 0.4; letter-spacing: 0.08em; }
+    to { opacity: 1; letter-spacing: 0.02em; }
+  }
+
+  /* SCROLL REVEAL */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* RESPONSIVE — TABLET */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero { min-height: auto; }
+    .hero-left { padding: 7rem 2rem 3rem; }
+    section { padding: 5rem 2rem; }
+    .about-grid, .contact-section { grid-template-columns: 1fr; gap: 3rem; }
+    .video-grid { grid-template-columns: repeat(2, 1fr); }
+    .video-grid.shorts-grid { grid-template-columns: repeat(2, 1fr); }
+    footer { padding: 1.5rem 2rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+  }
+
+  /* RESPONSIVE — MOBILE */
+  @media (max-width: 600px) {
+    /* NAV */
+    nav { padding: 1rem 1.2rem; }
+    .nav-logo { font-size: 1.1rem; }
+
+    /* HERO — full width on mobile */
+    .hero { min-height: 100vh; }
+    .hero-left { padding: 6rem 1.5rem 3rem; }
+
+    /* STATS */
+    .hero-stats { gap: 1.5rem; margin-top: 1.8rem; flex-wrap: wrap; }
+    .stat-num { font-size: 1.8rem; }
+    .stat-label { font-size: 0.5rem; }
+
+    /* TICKER */
+    .ticker-item { font-size: 0.75rem; padding: 0 1.2rem; }
+
+    /* SECTIONS */
+    section { padding: 4rem 1.5rem; }
+    .section-title { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+
+    /* ABOUT */
+    .about-grid { grid-template-columns: 1fr; gap: 2.5rem; margin-top: 2rem; }
+    .about-text { font-size: 0.95rem; }
+    .skills-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .skill-pill { font-size: 0.55rem; padding: 0.6rem 0.7rem; }
+
+    /* WORK */
+    .video-tabs { margin: 2rem 0 1.5rem; }
+    .tab-btn { font-size: 0.6rem; padding: 0.7rem 1rem; }
+    .video-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+    .video-grid.shorts-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* EXPERIENCE */
+    .exp-line { padding-left: 1.5rem; margin-top: 2.5rem; }
+    .exp-company { font-size: 1.4rem; }
+    .exp-desc { font-size: 0.85rem; }
+
+    /* CONTACT */
+    .contact-section {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      padding: 4rem 1.5rem;
+    }
+    .contact-item { padding: 1rem 1.2rem; gap: 1rem; }
+    .contact-icon { width: 36px; height: 36px; }
+
+    /* FOOTER */
+    footer {
+      padding: 1.2rem 1.5rem;
+      flex-direction: column;
+      gap: 0.4rem;
+      text-align: center;
+    }
+
+    /* HIDE CURSOR ON MOBILE */
+    .cursor, .cursor-ring { display: none; }
+    body { cursor: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">SK</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#work">Work</a>
+    <a href="#experience">Experience</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home" style="padding:0;">
+  <div class="hero-left">
+    <div class="hero-tag">Video Editor · Content Creator</div>
+    <h1 class="hero-name">SUYASH<br><span>KAMBLE</span></h1>
+    <p class="hero-role">Crafting stories through the art of the cut</p>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num counter" data-target="3" data-suffix="+">0+</span>
+        <span class="stat-label">Years Exp.</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num counter" data-target="100" data-suffix="+">0+</span>
+        <span class="stat-label">Projects Done</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num counter" data-target="50" data-suffix="M+">0M+</span>
+        <span class="stat-label">Views Generated</span>
+      </div>
+    </div>
+  </div>
+
+
+<!-- WORK -->
+<section id="work" class="work-section">
+  <div class="section-label">Selected Work</div>
+  <h2 class="section-title reveal">FRAMES I'VE<br>CRAFTED</h2>
+
+  <div class="video-tabs">
+    <button class="tab-btn active" onclick="switchTab('long')">Long Form</button>
+    <button class="tab-btn" onclick="switchTab('short')">Short Form</button>
+  </div>
+
+  <!-- LONG FORM -->
+  <div class="tab-panel active" id="panel-long">
+    <div class="video-grid">
+
+      <a class="video-card reveal" href="https://youtu.be/Bc6tp1B5n60" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/Bc6tp1B5n60/hqdefault.jpg" alt="Video 1" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">01</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtu.be/Z4XThbh8wQk" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/Z4XThbh8wQk/hqdefault.jpg" alt="Video 2" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">02</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtu.be/oz28U0pjQA8" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/oz28U0pjQA8/hqdefault.jpg" alt="Video 3" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">03</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtu.be/5iQHxHPziII" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/5iQHxHPziII/hqdefault.jpg" alt="Video 4" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">04</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtu.be/FsCikJ4aqxo" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/FsCikJ4aqxo/hqdefault.jpg" alt="Video 5" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">05</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtu.be/xXY_t7n5RNw" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/xXY_t7n5RNw/hqdefault.jpg" alt="Video 6" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">06</span>
+          <span class="ext-link">↗ YouTube</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- SHORT FORM -->
+  <div class="tab-panel" id="panel-short">
+    <div class="video-grid shorts-grid">
+
+      <a class="video-card reveal" href="https://youtube.com/shorts/RiOUDUitAJ8" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/RiOUDUitAJ8/hqdefault.jpg" alt="Short 1" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">S1</span>
+          <span class="ext-link">↗ Short</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtube.com/shorts/-4c9-OmfjW0" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/-4c9-OmfjW0/hqdefault.jpg" alt="Short 2" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">S2</span>
+          <span class="ext-link">↗ Short</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtube.com/shorts/UVEqGPNN9og" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/UVEqGPNN9og/hqdefault.jpg" alt="Short 3" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">S3</span>
+          <span class="ext-link">↗ Short</span>
+        </div>
+      </a>
+
+      <a class="video-card reveal" href="https://youtube.com/shorts/3_VLgaXib2E" target="_blank" rel="noopener">
+        <div class="video-thumb">
+          <img src="https://img.youtube.com/vi/3_VLgaXib2E/hqdefault.jpg" alt="Short 4" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="video-overlay">
+            <div class="play-btn"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="3,1 13,7 3,13"/></svg></div>
+          </div>
+        </div>
+        <div class="video-info">
+          <span class="video-num">S4</span>
+          <span class="ext-link">↗ Short</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label">About Me</div>
+  <h2 class="section-title reveal">THE MAN<br>BEHIND THE CUT</h2>
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p>
+        I'm <strong>Suyash Kamble</strong>, a video editor with <strong>3+ years of professional experience</strong> crafting compelling content for digital audiences. Currently, I bring stories to life at <strong>Trakin Tech</strong> — one of India's most-watched tech YouTube channels.
+      </p>
+      <p>
+        My work spans everything from in-depth long-form tech reviews and explainer videos to snappy, viral-ready short-form content. I understand the grammar of visual storytelling — knowing not just how to cut, but <em>why</em> to cut.
+      </p>
+      <p>
+        I work across the full post-production pipeline: editing, color grading, motion graphics, and audio sync — always with an eye for pacing, clarity, and audience retention.
+      </p>
+    </div>
+    <div class="skills-grid reveal">
+      <div class="skill-pill">Adobe Premiere Pro</div>
+      <div class="skill-pill">DaVinci Resolve</div>
+      <div class="skill-pill">After Effects</div>
+      <div class="skill-pill">Color Grading</div>
+      <div class="skill-pill">Motion Graphics</div>
+      <div class="skill-pill">Short Form / Reels</div>
+      <div class="skill-pill">Long Form YouTube</div>
+      <div class="skill-pill">Audio Mixing</div>
+      <div class="skill-pill">Thumbnail Design</div>
+      <div class="skill-pill">Storytelling</div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="section-label">Experience</div>
+  <h2 class="section-title reveal">THE JOURNEY</h2>
+  <div class="exp-line">
+    <div class="exp-item reveal">
+      <div class="exp-company">Trakin Tech</div>
+      <div class="exp-role">Video Editor — Current</div>
+      <p class="exp-desc">
+        Editing long-form and short-form video content for one of India's leading tech YouTube channels. Responsible for pacing, cuts, motion graphics integration, color grading, and ensuring each video maximizes audience retention and engagement.
+      </p>
+      <div class="exp-period">2024 — Present · YouTube Content Production</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<div class="contact-section" id="contact">
+  <div class="contact-left reveal">
+    <div class="section-label">Get In Touch</div>
+    <h2 class="section-title">LET'S<br>CREATE.</h2>
+    <p style="margin-top:1.5rem;font-size:0.95rem;line-height:1.8;color:rgba(240,236,227,0.6);max-width:380px;">
+      Available for freelance projects, collaborations, and full-time opportunities. Let's make something great together.
+    </p>
+  </div>
+  <div class="contact-right reveal">
+
+    <a class="contact-item" href="mailto:suyashk1858@gmail.com">
+      <div class="contact-icon">
+        <svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#EA4335" d="M24 5.4L5.4 19.1V42h10.8V27.6L24 33.3l7.8-5.7V42H42.6V19.1z"/>
+          <path fill="#4285F4" d="M42.6 19.1L24 5.4 5.4 19.1H42.6z"/>
+          <path fill="#34A853" d="M31.8 27.6V42h10.8V19.1z"/>
+          <path fill="#FBBC05" d="M5.4 19.1V42h10.8V27.6z"/>
+          <path fill="#C5221F" d="M24 5.4L5.4 19.1l10.8 8.5L24 22.4l7.8 5.2 10.8-8.5z"/>
+        </svg>
+      </div>
+      <div class="contact-details">
+        <div class="contact-type">Suyash Kamble</div>
+        <div class="contact-value">Email</div>
+      </div>
+    </a>
+
+    <a class="contact-item" href="https://www.linkedin.com/in/suyash-kamble-a47068236" target="_blank" rel="noopener">
+      <div class="contact-icon">
+        <svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="8" fill="#0A66C2"/>
+          <path fill="#fff" d="M12 19h6v17h-6zM15 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM20 19h5.7v2.3h.1c.8-1.5 2.7-3 5.5-3 5.9 0 7 3.9 7 8.9V36h-6v-7.7c0-1.8 0-4.2-2.6-4.2-2.6 0-3 2-3 4.1V36H20V19z"/>
+        </svg>
+      </div>
+      <div class="contact-details">
+        <div class="contact-value">LinkedIn</div>
+      </div>
+    </a>
+
+    <a class="contact-item" href="https://www.behance.net/suyashk185343b" target="_blank" rel="noopener">
+      <div class="contact-icon">
+        <svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="8" fill="#1769FF"/>
+          <path fill="#fff" d="M20.5 13c2.2 0 4.1.4 5.6 1.3 1.5.9 2.2 2.4 2.2 4.5 0 1.3-.3 2.4-1 3.2-.4.5-1 1-1.8 1.4 1.2.4 2.1 1.1 2.7 2 .6.9.9 2 .9 3.4 0 1.5-.4 2.8-1.1 3.8-.5.7-1.1 1.2-1.9 1.7-.9.5-1.9.8-3 .9-.7.1-1.3.1-2 .1H8V13h12.5zm-.7 8.8c1 0 1.7-.2 2.3-.7.5-.5.8-1.1.8-2 0-1-.3-1.7-.9-2.1-.6-.4-1.3-.6-2.3-.6h-7.2v5.4h7.3zm.4 9.4c1.1 0 2-.3 2.6-.8.6-.6.9-1.3.9-2.3 0-1.1-.3-1.9-1-2.4-.6-.5-1.5-.7-2.6-.7h-7.6v6.2h7.7zM38.5 15.5v2.4h-9.7v-2.4h9.7zm-1.1 6.2c-.9-.9-2.1-1.3-3.8-1.3-1.8 0-3.1.5-4.1 1.4-1 .9-1.5 2.2-1.7 3.7h10.7c-.1-1.6-.5-2.9-1.1-3.8zM33.6 33c1.1 0 2-.3 2.7-.8.7-.5 1.2-1.3 1.4-2.3h-3.4c0 .8-.3 1.4-.8 1.8-.5.4-1.1.6-1.9.6-.9 0-1.7-.3-2.3-.9-.6-.6-.9-1.5-1-2.7h9.5c0-.3.1-.6.1-.9 0-2.1-.6-3.8-1.7-5-1.2-1.2-2.8-1.8-4.8-1.8-2 0-3.6.6-4.8 1.9-1.2 1.3-1.8 3-1.8 5.2 0 2.3.6 4.1 1.8 5.3 1.2 1.2 2.9 1.8 5 1.8 1.7 0 3.1-.4 4.2-1.2.9-.7 1.6-1.7 2-3h-3.3c-.2.5-.5 1-.9 1.2-.5.5-1.2.8-2 .8z"/>
+        </svg>
+      </div>
+      <div class="contact-details">
+        <div class="contact-value">Behance</div>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-name">Suyash Kamble</div>
+  <div class="footer-copy">© 2025 · Video Editor · All Rights Reserved</div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animateCursor() {
+    cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '56px'; ring.style.height = '56px'; ring.style.borderColor = 'rgba(201,168,76,0.9)'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.borderColor = 'rgba(201,168,76,0.5)'; });
+  });
+
+  // ── COUNTER ANIMATION ──────────────────────────────────────────
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1800;
+    const start = performance.now();
+    function step(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.floor(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target + suffix;
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ── SCROLL REVEAL + COUNTER TRIGGER ───────────────────────────
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        const idx = Array.from(e.target.parentElement?.children || []).indexOf(e.target);
+        setTimeout(() => e.target.classList.add('visible'), 80 * idx);
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  // Trigger counters when hero stats come into view (on page load)
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.counter').forEach(c => animateCounter(c));
+        counterObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  const statsEl = document.querySelector('.hero-stats');
+  if (statsEl) counterObs.observe(statsEl);
+
+  // ── SECTION SLIDE-IN ANIMATIONS ───────────────────────────────
+  // Add staggered fade+slide to skill pills
+  document.querySelectorAll('.skill-pill').forEach((pill, i) => {
+    pill.style.opacity = '0';
+    pill.style.transform = 'translateY(16px)';
+    pill.style.transition = `opacity 0.5s ${i * 0.06}s ease, transform 0.5s ${i * 0.06}s ease`;
+  });
+  const pillObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.skill-pill').forEach(p => {
+          p.style.opacity = '1';
+          p.style.transform = 'translateY(0)';
+        });
+        pillObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  const skillGrid = document.querySelector('.skills-grid');
+  if (skillGrid) pillObs.observe(skillGrid);
+
+  // Video cards stagger on scroll
+  document.querySelectorAll('.video-card').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(30px) scale(0.97)';
+    card.style.transition = `opacity 0.55s ${(i % 4) * 0.1}s ease, transform 0.55s ${(i % 4) * 0.1}s ease`;
+  });
+  const cardObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0) scale(1)';
+        cardObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.video-card').forEach(c => cardObs.observe(c));
+
+  // Experience item slide from left
+  document.querySelectorAll('.exp-item').forEach((item, i) => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(-30px)';
+    item.style.transition = `opacity 0.6s ${i * 0.15}s ease, transform 0.6s ${i * 0.15}s ease`;
+  });
+  const expObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateX(0)';
+        expObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.exp-item').forEach(el => expObs.observe(el));
+
+  // Contact items slide from right
+  document.querySelectorAll('.contact-item').forEach((item, i) => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(30px)';
+    item.style.transition = `opacity 0.5s ${i * 0.12}s ease, transform 0.5s ${i * 0.12}s ease`;
+  });
+  const contactObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.contact-item').forEach(c => {
+          c.style.opacity = '1';
+          c.style.transform = 'translateX(0)';
+        });
+        contactObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  const contactRight = document.querySelector('.contact-right');
+  if (contactRight) contactObs.observe(contactRight);
+
+  // Section titles typewriter-style underline pulse
+  const sectionTitles = document.querySelectorAll('.section-title');
+  const titleObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.animation = 'titlePulse 0.6s ease forwards';
+        titleObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  sectionTitles.forEach(t => titleObs.observe(t));
+
+  // Tab switching
+  function switchTab(type) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + type).classList.add('active');
+    // Re-trigger card animations for newly shown panel
+    document.querySelectorAll('#panel-' + type + ' .video-card').forEach((card, i) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(30px) scale(0.97)';
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0) scale(1)';
+      }, i * 80 + 50);
+    });
+  }
+</script>
+</body>
+</html>
